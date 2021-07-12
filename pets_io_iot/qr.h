@@ -88,7 +88,7 @@ int checkVertical(uint8_t * buf, int y, int x, int ratioMiddle, int ratioTotal, 
     curr_y--;
   }
   
-  if (curr_y<0 || checkStates[1]>ratioMiddle) { // Not a center (out of image or center is smaller than rest)
+  if (curr_y<0 || checkStates[1]>=ratioMiddle) { // Not a center (out of image or center is smaller than rest)
 #ifdef DEBUG
     Serial.printf("scanQR: checkVertical negative Y (%d) or ratio error (%d/%d)\n", curr_y, checkStates[1], ratioMiddle);
     Serial.printf("scanQR: checkVertical: [%d,%d,%d,%d,%d]\n", checkStates[0], checkStates[1], checkStates[2], checkStates[3], checkStates[4]);
@@ -101,7 +101,7 @@ int checkVertical(uint8_t * buf, int y, int x, int ratioMiddle, int ratioTotal, 
     curr_y--;
   }
   
-  if (curr_y<0 || checkStates[0]>ratioMiddle) { // Not a center (out of image or center is smaller than rest)
+  if (curr_y<0 || checkStates[0]>=ratioMiddle) { // Not a center (out of image or center is smaller than rest)
 #ifdef DEBUG
     Serial.printf("scanQR: checkVertical negative Y (%d) or ratio error (%d/%d)\n", curr_y, checkStates[0], ratioMiddle);
     Serial.printf("scanQR: checkVertical: [%d,%d,%d,%d,%d]\n", checkStates[0], checkStates[1], checkStates[2], checkStates[3], checkStates[4]);
@@ -129,7 +129,7 @@ int checkVertical(uint8_t * buf, int y, int x, int ratioMiddle, int ratioTotal, 
     curr_y++;
   }
   
-  if (curr_y == max_y || checkStates[3]>ratioMiddle) { // Not a center (out of image or center is smaller than rest)
+  if (curr_y == max_y || checkStates[3]>=ratioMiddle) { // Not a center (out of image or center is smaller than rest)
 #ifdef DEBUG
     Serial.printf("scanQR: checkVertical out of bounds Y (%d) or ratio error (%d/%d)\n", curr_y, checkStates[3], ratioMiddle);
     Serial.printf("scanQR: checkVertical: [%d,%d,%d,%d,%d]\n", checkStates[0], checkStates[1], checkStates[2], checkStates[3], checkStates[4]);
@@ -142,7 +142,7 @@ int checkVertical(uint8_t * buf, int y, int x, int ratioMiddle, int ratioTotal, 
     curr_y++;
   }
   
-  if (curr_y == max_y || checkStates[4]>ratioMiddle) { // Not a center (out of image or center is smaller than rest)
+  if (curr_y == max_y || checkStates[4]>=ratioMiddle) { // Not a center (out of image or center is smaller than rest)
 #ifdef DEBUG
     Serial.printf("scanQR: checkVertical out of bounds Y (%d) or ratio error (%d/%d)\n", curr_y, checkStates[4], ratioMiddle);
     Serial.printf("scanQR: checkVertical: [%d,%d,%d,%d,%d]\n", checkStates[0], checkStates[1], checkStates[2], checkStates[3], checkStates[4]);
@@ -151,15 +151,17 @@ int checkVertical(uint8_t * buf, int y, int x, int ratioMiddle, int ratioTotal, 
   }
 
   // Check the ratio again
-//  checkTotal = 0;
-//  for (i = 0; i < 5; i++) {
-//    checkTotal += checkStates[i];
-//  }
+  checkTotal = 0;
+  for (i = 0; i < 5; i++) {
+    checkTotal += checkStates[i];
+  }
 
-//  if (5*abs(checkTotal-ratioTotal) >= 2*ratioTotal) {
-//    Serial.printf("scanQR: checkVertical  ratio error (%d/%d)\n", 5*abs(checkTotal-ratioTotal), 2*ratioTotal);
-//    return -1;
-//  }
+  if (5*abs(checkTotal-ratioTotal) >= 2*ratioTotal) {
+#ifdef DEBUG
+    Serial.printf("scanQR: checkVertical  ratio error (%d/%d)\n", 5*abs(checkTotal-ratioTotal), 2*ratioTotal);
+#endif
+    return -1;
+  }
 
 #ifdef DEBUG
   Serial.printf("scanQR: checkVertical -> checkRatio: [%d,%d,%d,%d,%d]\n", checkStates[0], checkStates[1], checkStates[2], checkStates[3], checkStates[4]);
