@@ -20,7 +20,9 @@ void setup() {
   Serial.println();
 
 #ifdef SCAN_QR
-  parsed_json_t *scanned_data;
+  parsed_json_t *scanned_data = NULL;
+  uint8_t *scanned_data_raw = NULL;
+  int scanned_data_size = 0;
 #endif
 
 #ifdef DEBUG
@@ -40,8 +42,8 @@ void setup() {
 #ifdef SCAN_QR
   init_camera(true);
   do {
-    scanned_data = scanQR();
-  } while (scanned_data == NULL);
+    scanned_data_size = scanQR(&scanned_data_raw);
+  } while (scanned_data_size <= 0);
 #else
   init_camera(false);
 #endif
