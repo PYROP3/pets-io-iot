@@ -2,6 +2,8 @@
 
 #define QR_H
 
+#include "camera.h"
+
 //typedef struct {
 //    uint8_t * buf;              /*!< Pointer to the pixel data */
 //    size_t len;                 /*!< Length of the buffer in bytes */
@@ -60,115 +62,155 @@ float * gaussReduce(float mat[3][4]) {
   static float result[3];
   float k;
 
+#ifdef DEBUG
   Serial.println("start gaussReduce ===============");
+#endif
 
+#ifdef DEBUG
   printMat3x4(mat);
+#endif
   //( p1x p2x p0x | ax )
   //( p1y p2y p0y | ay )
   //( 1   1   1   | 1  )
 
   // Divide first line by first element
   k = mat[0][0];
+#ifdef DEBUG
   Serial.printf("scanQR: Divide first k=%.3f\n", k);
+#endif
   for (i=0;i<4;i++) {
     mat[0][i] = mat[0][i] / k;
   }
 
+#ifdef DEBUG
   printMat3x4(mat);
+#endif
   //( 1   ?   ?   | ?  )
   //( p1y p2y p0y | ay )
   //( 1   1   1   | 1  )
 
   // Reduce second and third lines
   k = mat[1][0];
+#ifdef DEBUG
   Serial.printf("scanQR: Reduce second & third k=%.3f\n", k);
+#endif
   for (i=0;i<4;i++) {
     mat[1][i] = mat[1][i] - (mat[0][i] * k);
   }
 
+#ifdef DEBUG
   printMat3x4(mat);
+#endif
   //( 1 ? ? | ? )
   //( 0 ? ? | ? )
   //( 1 1 1 | 1 )
   
   k = mat[2][0];
+#ifdef DEBUG
   Serial.printf("scanQR: Reduce second & third k=%.3f\n", k);
+#endif
   for (i=0;i<4;i++) {
     mat[2][i] = mat[2][i] - (mat[0][i] * k);
   }
 
+#ifdef DEBUG
   printMat3x4(mat);
+#endif
   //( 1 ? ? | ? )
   //( 0 ? ? | ? )
   //( 0 ? ? | ? )
 
   // Divide second line by second element
   k = mat[1][1];
+#ifdef DEBUG
   Serial.printf("scanQR: Divide second k=%.3f\n", k);
+#endif
   for (i=1;i<4;i++) {
     mat[1][i] = mat[1][i] / k;
   }
 
+#ifdef DEBUG
   printMat3x4(mat);
+#endif
   //( 1 ? ? | ? )
   //( 0 1 ? | ? )
   //( 0 ? ? | ? )
 
   // Reduce third line
   k = mat[2][1];
+#ifdef DEBUG
   Serial.printf("scanQR: Reduce third k=%.3f\n", k);
+#endif
   for (i=0;i<4;i++) {
     mat[2][i] = mat[2][i] - (mat[1][i] * k);
   }
 
+#ifdef DEBUG
   printMat3x4(mat);
+#endif
   //( 1 ? ? | ? )
   //( 0 1 ? | ? )
   //( 0 0 ? | ? )
 
   // Divide third line by third element
   k = mat[2][2];
+#ifdef DEBUG
   Serial.printf("scanQR: Divide third k=%.3f\n", k);
+#endif
   for (i=2;i<4;i++) {
     mat[2][i] = mat[2][i] / k;
   }
 
+#ifdef DEBUG
   printMat3x4(mat);
+#endif
   //( 1 ? ? | ? )
   //( 0 1 ? | ? )
   //( 0 0 1 | ? )
 
   // Reduce first and second lines
   k = mat[0][2];
+#ifdef DEBUG
   Serial.printf("scanQR: Reduce first k=%.3f\n", k);
+#endif
   for (i=2;i<4;i++) {
     mat[0][i] = mat[0][i] - (mat[2][i] * k);
   }
 
+#ifdef DEBUG
   printMat3x4(mat);
+#endif
   //( 1 ? 0 | ? )
   //( 0 1 ? | ? )
   //( 0 0 1 | ? )
   
   k = mat[1][2];
+#ifdef DEBUG
   Serial.printf("scanQR: Reduce second k=%.3f\n", k);
+#endif
   for (i=1;i<4;i++) {
     mat[1][i] = mat[1][i] - (mat[2][i] * k);
   }
 
+#ifdef DEBUG
   printMat3x4(mat);
+#endif
   //( 1 ? 0 | ? )
   //( 0 1 0 | ? )
   //( 0 0 1 | ? )
 
   // Reduce first line again
   k = mat[0][1];
+#ifdef DEBUG
   Serial.printf("scanQR: Reduce first k=%.3f\n", k);
+#endif
   for (i=0;i<4;i++) {
     mat[0][i] = mat[0][i] - (mat[1][i] * k);
   }
 
+#ifdef DEBUG
   printMat3x4(mat);
+#endif
   //( 1 0 0 | ? )
   //( 0 1 0 | ? )
   //( 0 0 1 | ? )
@@ -177,8 +219,10 @@ float * gaussReduce(float mat[3][4]) {
   for (i=0;i<3;i++) {
     result[i] = mat[i][3];
   }
-  
+
+#ifdef DEBUG
   Serial.println("finish gaussReduce ===============");
+#endif
   
   return result;
 }
@@ -515,7 +559,7 @@ bool handleFinder(uint8_t * buf, int * ratio, int x, int y, int max_x, int max_y
     if (distSquared(finders[finder_idx][0], finders[finder_idx][1], center_x, center_y) < 100) { // Too close, same finder
       finders[finder_idx][0] = (finders[finder_idx][0] + center_x) / 2;
       finders[finder_idx][1] = (finders[finder_idx][1] + center_y) / 2;
-      finders[finder_idx][2] = (finders[finder_idx][2] + ratio[2]) / 2;
+      finders[finder_idx][2] = (finders[finder_idx][2] + total_size) / 2;
 #ifdef DEBUG
       Serial.printf("scanQR: Found duplicated finder [%d], updating (%d, %d, %d) => (%d, %d, %d)\n", finder_idx, center_x, center_y, estimated_size, finders[finder_idx][0],finders[finder_idx][1], finders[finder_idx][2]);
 #endif
@@ -527,7 +571,7 @@ bool handleFinder(uint8_t * buf, int * ratio, int x, int y, int max_x, int max_y
   if (!found) { // Found new finder!
     finders[total_finders][0] = center_x;
     finders[total_finders][1] = center_y;
-    finders[total_finders][2] = ratio[2];
+    finders[total_finders][2] = total_size;
     total_finders++;
 #ifdef DEBUG
     Serial.printf("Found new finder!\n");
@@ -590,12 +634,14 @@ boolean findFinders(uint8_t *buf, int width, int height) {
     }
   }
 
+#ifdef DEBUG
   if (total_finders == 3) {
     Serial.printf("scanQR: found %d finders\n", total_finders);
     for (ratio_ptr = 0; ratio_ptr < total_finders; ratio_ptr++) {
       Serial.printf("scanQR:\t(%d, %d, %d)\n", finders[ratio_ptr][0], finders[ratio_ptr][1], finders[ratio_ptr][2]);
     }
   }
+#endif
 
 #ifdef DEBUG
   Serial.printf("scanQR: finished!\n");
@@ -605,13 +651,15 @@ boolean findFinders(uint8_t *buf, int width, int height) {
 }
 
 void reorderFinders() {
+  int temp[3];
+  int swap = 0;
   // Set finders[0] to corner
   int d01 = distSquared(_VX(finders[0]), _VY(finders[0]), _VX(finders[1]), _VY(finders[1]));
   int d12 = distSquared(_VX(finders[2]), _VY(finders[2]), _VX(finders[1]), _VY(finders[1]));
   int d02 = distSquared(_VX(finders[0]), _VY(finders[0]), _VX(finders[2]), _VY(finders[2]));
+#ifdef DEBUG
   Serial.printf("scanQR: reorderFinders d01=%d, d12=%d, d02=%d\n", d01, d12, d02);
-  int temp[3];
-  int swap = 0;
+#endif
 
   if (d01 > d02) { // 0 or 2 is corner
     if (d01 > d12) { // 2 is corner
@@ -626,7 +674,9 @@ void reorderFinders() {
       
     }
   }
+#ifdef DEBUG
   Serial.printf("scanQR: reorderFinders : swap=%d\n", swap);
+#endif
 
   if (swap != 0) {
       _VX(temp) = _VX(finders[0]);
@@ -638,10 +688,12 @@ void reorderFinders() {
       _VX(finders[swap]) = _VX(temp);
       _VY(finders[swap]) = _VY(temp);
       _SZ(finders[swap]) = _SZ(temp);
+#ifdef DEBUG
     for (swap = 0; swap < total_finders; swap++) {
       Serial.printf("scanQR: reordered finders\t(%d, %d, %d)\n", finders[swap][0], finders[swap][1], finders[swap][2]);
     }
     Serial.println("");
+#endif
   }
 }
 
@@ -657,11 +709,15 @@ void getAnchor() {
   int _cd[2];
   float k;
 
+#ifdef DEBUG
   Serial.printf("scanQR: getAnchor\n");
+#endif
 
 //  if (s1 == s2) // parallel
   if (_SZ(finders[0]) == _SZ(finders[1])) {
+#ifdef DEBUG
     Serial.printf("scanQR: 0-1 parallel\n");
+#endif
 //  endpoint x = x3 + (x1 - x2)
 //  endpoint y = y3 + (y1 - y2)
 //  line1_2 = (x3, y3) + t(x2 - x1, y2 - y1)
@@ -677,15 +733,21 @@ void getAnchor() {
 //
 //  line1_2 = (x3, y3) + t(endpointx - x3, endpointy - y3)
     k = (float)_SZ(finders[0]) / ((float)_SZ(finders[1]) - (float)_SZ(finders[0]));
+#ifdef DEBUG
     Serial.printf("scanQR: 0-1 NOT parallel k=%.3f\n", k);
+#endif
     _VX(p12) = _VX(finders[0]) + ((_VX(finders[0]) - _VX(finders[1])) * k);
     _VY(p12) = _VY(finders[0]) + ((_VY(finders[0]) - _VY(finders[1])) * k);
   }
+#ifdef DEBUG
   Serial.printf("scanQR: 0-1 fugue %d,%d\n", _VEC2(p12));
+#endif
   
 //  if (s1 == s3) // parallel
   if (_SZ(finders[0]) == _SZ(finders[2])) {
+#ifdef DEBUG
     Serial.printf("scanQR: 0-2 parallel\n");
+#endif
 //  endpoint x = x2 + (x1 - x3)
 //  endpoint y = y2 + (y1 - y3)
 //  line1_3 = (x2, y2) + t(x3 - x1, y3 - y1)
@@ -701,11 +763,15 @@ void getAnchor() {
 //
 //  line1_3 = (x2, y2) + t(endpointx - x2, endpointy - y2)
     k = (float)_SZ(finders[0]) / ((float)_SZ(finders[2]) - (float)_SZ(finders[0]));
+#ifdef DEBUG
     Serial.printf("scanQR: 0-2 NOT parallel k=%.3f\n", k);
+#endif
     _VX(p13) = _VX(finders[0]) + ((_VX(finders[0]) - _VX(finders[2])) * k);
     _VY(p13) = _VY(finders[0]) + ((_VY(finders[0]) - _VY(finders[2])) * k);
   }
+#ifdef DEBUG
   Serial.printf("scanQR: 0-2 fugue %d,%d\n", _VEC2(p13));
+#endif
 
 //            C e1_3
 //                |
@@ -723,15 +789,21 @@ void getAnchor() {
   _VX(_cd) = _VX(finders[1]) - _VX(p13);
   _VY(_cd) = _VY(finders[1]) - _VY(p13);
   
+#ifdef DEBUG
   Serial.printf("scanQR: ca %d,%d\n", _VEC2(_ca));
   Serial.printf("scanQR: ab %d,%d\n", _VEC2(_ab));
   Serial.printf("scanQR: cd %d,%d\n", _VEC2(_cd));
+#endif
   
   k = modCrossProduct(_ca, _ab) / modCrossProduct(_cd, _ab);
+#ifdef DEBUG
   Serial.printf("scanQR: k=%.3f\n", k);
+#endif
   _VX(anchor) = _VX(p13) + k * _VX(_cd);
   _VY(anchor) = _VY(p13) + k * _VY(_cd);
+#ifdef DEBUG
   Serial.printf("scanQR: anchor @ %d,%d\n", _VEC2(anchor));
+#endif
 }
 
 void applyTransform(int x, int y) {
@@ -745,7 +817,9 @@ void applyTransform(int x, int y) {
   _VX(transformed_coords) = ((int)(_xyz[0]/_xyz[2]));
   _VY(transformed_coords) = ((int)(_xyz[1]/_xyz[2]));
 
+#ifdef DEBUG
   Serial.printf("scanQR: applied transform %d,%d => %d,%d\n", x, y, _VEC2(transformed_coords));
+#endif
 }
 
 void calculatePerspective() {
@@ -753,45 +827,53 @@ void calculatePerspective() {
 //  float k2_8k = SQ(k) - (8. * k);
 //  float kp8 = k + 8.;
 //  float k_82 = SQ(k - 8.);
-  float invk_6 = 1. / (k - 6.);
-  float ko6_k = k/(6.- k);
+  float invk_7 = 1. / (k - 7.);
+  float one_k = (1. - k) * invk_7;
 
   int i, j, n;
 
 //  float transformAPrime[3][3] = {{kp8/k2_8k,          0, -4*kp8/k2_8k},
 //                                 {0,          kp8/k2_8k, -4*kp8/k2_8k},
 //                                 {-kp8/k_82, -kp8/k_82 ,   k*kp8/k_82}};
-  float transformAPrime[3][3] = {{     0, invk_6, -4*invk_6},
-                                 {invk_6,      0, -4*invk_6},
-                                 {invk_6, invk_6,     ko6_k}};
+  float transformAPrime[3][3] = {{     0, invk_7, -3*invk_7},
+                                 {invk_7,      0, -3*invk_7},
+                                 {invk_7, invk_7,     one_k}};
 
+#ifdef DEBUG
   Serial.printf("scanQR:      [%.3f, %.3f, %.3f]\n", transformAPrime[0][0], transformAPrime[0][1], transformAPrime[0][2]);
   Serial.printf("scanQR: A' = [%.3f, %.3f, %.3f]\n", transformAPrime[1][0], transformAPrime[1][1], transformAPrime[1][2]);
   Serial.printf("scanQR:      [%.3f, %.3f, %.3f]\n", transformAPrime[2][0], transformAPrime[2][1], transformAPrime[2][2]);
   Serial.println("");
+#endif
 
   float transformBRaw[3][4] = {{(float)_VX(finders[1]), (float)_VX(finders[2]), (float)_VX(finders[0]), (float)_VX(anchor)},
                                {(float)_VY(finders[1]), (float)_VY(finders[2]), (float)_VY(finders[0]), (float)_VY(anchor)},
                                {                    1.,                     1.,                     1.,                 1.}};
 
+#ifdef DEBUG
   Serial.printf("scanQR:      [%.3f, %.3f, %.3f | %.3f]\n", transformBRaw[0][0], transformBRaw[0][1], transformBRaw[0][2], transformBRaw[0][3]);
   Serial.printf("scanQR: Br = [%.3f, %.3f, %.3f | %.3f]\n", transformBRaw[1][0], transformBRaw[1][1], transformBRaw[1][2], transformBRaw[1][3]);
   Serial.printf("scanQR:      [%.3f, %.3f, %.3f | %.3f]\n", transformBRaw[2][0], transformBRaw[2][1], transformBRaw[2][2], transformBRaw[2][3]);
   Serial.println("");
+#endif
 
   float *transformBScale = gaussReduce(transformBRaw);
 
+#ifdef DEBUG
   Serial.printf("scanQR: coefs = [%.3f, %.3f, %.3f]\n", transformBScale[0], transformBScale[1], transformBScale[2]);
   Serial.println("");
+#endif
 
   float transformB[3][3] = {{(float)_VX(finders[1])*transformBScale[0], (float)_VX(finders[2])*transformBScale[1], (float)_VX(finders[0])*transformBScale[2]},
                             {(float)_VY(finders[1])*transformBScale[0], (float)_VY(finders[2])*transformBScale[1], (float)_VY(finders[0])*transformBScale[2]},
                             {                       transformBScale[0],                        transformBScale[1],                        transformBScale[2]}};
 
+#ifdef DEBUG
   Serial.printf("scanQR:     [%.3f, %.3f, %.3f]\n", transformB[0][0], transformB[0][1], transformB[0][2]);
   Serial.printf("scanQR: B = [%.3f, %.3f, %.3f]\n", transformB[1][0], transformB[1][1], transformB[1][2]);
   Serial.printf("scanQR:     [%.3f, %.3f, %.3f]\n", transformB[2][0], transformB[2][1], transformB[2][2]);
   Serial.println("");
+#endif
   
   for (i = 0; i < 3; i++) {
     for (j = 0; j < 3; j++) {
@@ -802,6 +884,7 @@ void calculatePerspective() {
     }
   }
 
+#ifdef DEBUG
   Serial.printf("scanQR:     [%.3f, %.3f, %.3f]\n", perspective_transform[0][0], perspective_transform[0][1], perspective_transform[0][2]);
   Serial.printf("scanQR: T = [%.3f, %.3f, %.3f]\n", perspective_transform[1][0], perspective_transform[1][1], perspective_transform[1][2]);
   Serial.printf("scanQR:     [%.3f, %.3f, %.3f]\n", perspective_transform[2][0], perspective_transform[2][1], perspective_transform[2][2]);
@@ -818,6 +901,8 @@ void calculatePerspective() {
   
   Serial.printf("scanQR: transforming anchor (should be => %d,%d)\n", _VX(anchor), _VY(anchor));
   applyTransform(QR_N - 4, QR_N - 4);
+#endif
+
 }
 
 void processQRCode(uint8_t *buf, int width) {
@@ -829,10 +914,14 @@ void processQRCode(uint8_t *buf, int width) {
       rawCode[j][i] = IS_BLACK(buf[_VX(transformed_coords) + _VY(transformed_coords) * width]);
     }
   }
+}
 
+void printQRCode() {
+  int i, j;
+  
   for (i = 0; i < QR_N; i++) {
     for (j = 0; j < QR_N; j++) {
-      Serial.print(rawCode[j][i] ? "█" : "  ");
+      Serial.print(rawCode[j][i] ? "█" : "░");
     }
     Serial.println("");
   }
@@ -843,29 +932,41 @@ bool verifyTimingPattern() {
   uint8_t black = 1;
 
   for (n = QR_TIMING_START; n < QR_N - QR_TIMING_START; n++) {
+#ifdef DEBUG
     Serial.printf("scanQR: timing @ %d,%d should be %d, is actually %d\n", QR_TIMING_START, n, (int)black, rawCode[QR_TIMING_START][n]);
+#endif
     if ((black) ^ (rawCode[n][QR_TIMING_START])) {
+#ifdef DEBUG
       Serial.printf("scanQR: timing @ %d,%d should be %d, is actually %d\n", QR_TIMING_START, n, (int)black, rawCode[QR_TIMING_START][n]);
+#endif
       return false;
     }
     
+#ifdef DEBUG
     Serial.printf("scanQR: timing @ %d,%d should be %d, is actually %d\n", n, QR_TIMING_START, (int)black, rawCode[QR_TIMING_START][n]);
+#endif
     if ((black) ^ (rawCode[QR_TIMING_START][n])) {
+#ifdef DEBUG
       Serial.printf("scanQR: timing @ %d,%d should be %d, is actually %d\n", n, QR_TIMING_START, (int)black, rawCode[QR_TIMING_START][n]);
+#endif
       return false;
     }
 
     black = 1 - black;
   }
 
+#ifdef DEBUG
   Serial.println("scanQR: timing successful!");
+#endif
   return true;
 }
 
 int scanQR(uint8_t **target) {
    camera_fb_t * fb = NULL;
+#ifdef DEBUG
    int x, y;
-  
+#endif
+
 #ifdef DEBUG
   Serial.println("");
   Serial.printf("scanQR:==========================================\n");
@@ -903,23 +1004,14 @@ int scanQR(uint8_t **target) {
     *target = NULL;
     return -1;
   }
+  //bytesToB64(fb->buf, fb->len);
   
-  // TODO realign (persp. transform)
+  // realign (persp. transform)
   reorderFinders();
   getAnchor();
   calculatePerspective();
 
-  Serial.println("");
-  Serial.println("=========================================================================================");
-  for (y=0;y<fb->height;y++) {
-    for (x=0;x<fb->width;x++) {
-      Serial.print(IS_BLACK(fb->buf[x + y * fb->width]) ? "█" : "  ");
-    }
-    Serial.println("");
-  }
-  Serial.println("=========================================================================================");
-  Serial.println("");
-
+  // read all the NxN bits (black/white) and write them to a buffer (easier access from now on)
   processQRCode(fb->buf, fb->width);
   
   if (!verifyTimingPattern()) {
@@ -927,6 +1019,9 @@ int scanQR(uint8_t **target) {
     *target = NULL;
     return -1;
   }
+  Serial.println("scanQR: timing SUCCESS");
+
+  printQRCode();
 
   // TODO read data
   

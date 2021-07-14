@@ -3,19 +3,33 @@
 #define CAMERA_H
 #define CAMERA_MODEL_AI_THINKER
 
+//#define PRINT_B64
+
 #include "camera_pins.h"
 
+// TODO move b64 stuff to utils
 #define BASE64_ENCODING "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 String bytesToB64(uint8_t *bytes, int len) {
   String result = "";
   int i = 0;
+
+#ifdef PRINT_B64
+  Serial.printf("bytesToB64 in %d\n", len);
+#endif
   
   for (i = 0; i < len / 3; i++) {
     result += BASE64_ENCODING[(bytes[3*i] & 0xFC) >> 2];
     result += BASE64_ENCODING[((bytes[3*i] & 0x03) << 4) | ((bytes[3*i+1] & 0xF0) >> 4)];
     result += BASE64_ENCODING[((bytes[3*i+1] & 0x0F) << 2) | ((bytes[3*i+2] & 0xC0) >> 6)];
     result += BASE64_ENCODING[bytes[3*i+2] & 0x3F];
+#ifdef PRINT_B64
+  Serial.printf("%c%c%c%c", 
+      BASE64_ENCODING[(bytes[3*i] & 0xFC) >> 2],
+      BASE64_ENCODING[((bytes[3*i] & 0x03) << 4) | ((bytes[3*i+1] & 0xF0) >> 4)],
+      BASE64_ENCODING[((bytes[3*i+1] & 0x0F) << 2) | ((bytes[3*i+2] & 0xC0) >> 6)],
+      BASE64_ENCODING[bytes[3*i+2] & 0x3F]);
+#endif
   }
 
   if (len % 3 == 2) {
@@ -23,11 +37,27 @@ String bytesToB64(uint8_t *bytes, int len) {
     result += BASE64_ENCODING[((bytes[3*i] & 0x03) << 4) | ((bytes[3*i+1] & 0xF0) >> 4)];
     result += BASE64_ENCODING[(bytes[3*i+1] & 0x0F) << 2];
     result += "=";
+#ifdef PRINT_B64
+    Serial.printf("%c%c%c%c", 
+      BASE64_ENCODING[(bytes[3*i] & 0xFC) >> 2],
+      BASE64_ENCODING[((bytes[3*i] & 0x03) << 4) | ((bytes[3*i+1] & 0xF0) >> 4)],
+      BASE64_ENCODING[((bytes[3*i+1] & 0x0F) << 2)],
+      '=');
+#endif
   } else if (len % 3 == 1) {
     result += BASE64_ENCODING[(bytes[3*i] & 0xFC) >> 2];
     result += BASE64_ENCODING[(bytes[3*i] & 0x03) << 4];
     result += "==";
+#ifdef PRINT_B64
+    Serial.printf("%c%c%c%c", 
+      BASE64_ENCODING[(bytes[3*i] & 0xFC) >> 2],
+      BASE64_ENCODING[((bytes[3*i] & 0x03) << 4)],
+      '=',
+      '=');
+#endif
   }
+
+  Serial.println("");
 
   return result;
 }
@@ -72,11 +102,15 @@ int init_camera(boolean grayscale) {
   }
 
   // camera init
-  esp_err_t err = esp_camera_init(&config);
-  if (err != ESP_OK) {
-    Serial.printf("Camera init failed with error 0x%x", err);
-    return err;
-  }
+  esp_err_t err;
+
+  do {
+    err = esp_camera_init(&config);
+    if (err != ESP_OK) {
+      Serial.printf("Camera init failed with error 0x%x", err);
+      return err;
+    }
+  } while (err != ESP_OK);
 
   sensor_t * s = esp_camera_sensor_get();
   // initial sensors are flipped vertically and colors are a bit saturated
