@@ -4,6 +4,7 @@
 #define CAMERA_MODEL_AI_THINKER
 
 //#define PRINT_B64
+#define CAM_HD
 
 #include "camera_pins.h"
 
@@ -91,15 +92,15 @@ int init_camera(boolean grayscale) {
 //  config.jpeg_quality = 10;
 //  config.fb_count = 2;
 
-  if(false){
+#ifdef CAM_HD
     config.frame_size = FRAMESIZE_UXGA;
     config.jpeg_quality = 10;
     config.fb_count = 2;
-  } else {
+#else
     config.frame_size = FRAMESIZE_SVGA;
     config.jpeg_quality = 12;
     config.fb_count = 1;
-  }
+#endif
 
   // camera init
   esp_err_t err;

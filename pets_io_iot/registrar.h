@@ -2,17 +2,49 @@
 
 #define REGISTRAR_H
 
-#define REGISTER_API "http://192.168.15.11:5000/eventTriggered?registerToken="
+#ifdef ENV_LOCAL
+#define REGISTER_API "http://192.168.15.27:5000/confirmDeviceRegistration?registerToken="
+#else
+#define REGISTER_API "https://pets-io.herokuapp.com/confirmDeviceRegistration?registerToken="
+#endif
+
+#define PIO_DEVICE_ID "PIOFB00001"
+
+String generateRegistrationMessage(String registerToken) {
+  String objStart = "{";
+  String objEnd = "}";
+  String colon = ":";
+  String quotes = "\"";
+  String comma = ",";
+  String tknTag = "Token";
+  String devTag = "DeviceID";
+  String devStr = PIO_DEVICE_ID;
+  String message = objStart + 
+    quotes + tknTag + quotes + colon + quotes + registerToken + quotes + comma +
+    quotes + devTag + quotes + colon + quotes + devStr + quotes +
+    objEnd;
+  return message;
+}
 
 int registerDevice(String registerToken) {
   HTTPClient http;
+  
+#ifdef DEBUG
+  Serial.printf("Registering device [%s]\n", registerToken.c_str());
+#endif
   
   // Your Domain name with URL path or IP address with path
   http.begin((REGISTER_API + registerToken).c_str());
   
   // Send HTTP POST request
-  int httpResponseCode = http.GET();
-  
+  String httpMessage = generateRegistrationMessage(registerToken);
+#ifdef DEBUG
+  Serial.print("HTTP message: ");
+  Serial.println(httpMessage);
+#endif
+  int httpResponseCode = http.POST(httpMessage);
+
+#ifdef DEBUG
   if (httpResponseCode>0) {
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
@@ -23,6 +55,7 @@ int registerDevice(String registerToken) {
     Serial.print("Error code: ");
     Serial.println(httpResponseCode);
   }
+#endif
   // Free resources
   http.end();
   

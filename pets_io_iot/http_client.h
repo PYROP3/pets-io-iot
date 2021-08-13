@@ -2,10 +2,14 @@
 
 #define HTTP_CLIENT_H
 
-#define DEVICE_ID "PIOFB00001"
-
 //Your Domain name with URL path or IP address with path
-#define EVENT_API "http://192.168.15.11:5000/eventTriggered"
+#ifdef ENV_LOCAL
+#define EVENT_API "http://192.168.15.27:5000/eventTriggered"
+#else
+#define EVENT_API "https://pets-io.herokuapp.com/eventTriggered"
+#endif
+
+#define PIO_DEVICE_ID "PIOFB00001"
 
 String generateMessage(String picture_base64) {
   String objStart = "{";
@@ -13,10 +17,10 @@ String generateMessage(String picture_base64) {
   String colon = ":";
   String quotes = "\"";
   String comma = ",";
-  String imgTag = "img";
-  String devTag = "deviceId";
-  String devStr = DEVICE_ID;
-  String extTag = "extra";
+  String imgTag = "Img";
+  String devTag = "DeviceID";
+  String devStr = PIO_DEVICE_ID;
+  String extTag = "Extra";
   String nulStr = "null";
   String message = objStart + 
     quotes + imgTag + quotes + colon + quotes + picture_base64 + quotes + comma +
@@ -41,10 +45,13 @@ int sendEvent(String picture_base64) {
   // TODO try to remove background from photo
   // TODO add event extra (time in litterbox[s]/food consumed[g])
   String httpMessage = generateMessage(picture_base64);
+#ifdef DEBUG
   Serial.print("HTTP message: ");
   Serial.println(httpMessage);
+#endif
   int httpResponseCode = http.POST(httpMessage);
   
+#ifdef DEBUG
   if (httpResponseCode>0) {
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
@@ -55,6 +62,7 @@ int sendEvent(String picture_base64) {
     Serial.print("Error code: ");
     Serial.println(httpResponseCode);
   }
+#endif
   // Free resources
   http.end();
   

@@ -1,6 +1,7 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include "ble_server.h"
 #include "camera.h"
 #include "http_client.h"
 #include "state_machine.h"
@@ -9,21 +10,23 @@
 #include "registrar.h"
 #include "qr.h"
 
-#define SCAN_QR
+//#define SCAN_QR
+//#define REGISTER
+
+#define PIO_DEVICE_ID "PIOFB00001"
 
 void onEvent(void);
 
 void setup() {
-  // put your setup code here, to run once:
+  boolean apConnected = false;
+#ifdef REGISTER
+  int registerResult;
+  String registerToken;
+#endif
+  
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
-
-#ifdef SCAN_QR
-  parsed_json_t *scanned_data = NULL;
-  uint8_t *scanned_data_raw = NULL;
-  int scanned_data_size = 0;
-#endif
 
 #ifdef DEBUG
   Serial.print("Testing B64: ");
@@ -37,55 +40,21 @@ void setup() {
   Serial.println(" (should be \"TQ==\")");
 #endif
 
-  init_ultrasound();
+  init_ble();
 
-#ifdef SCAN_QR
-  init_camera(true);
   do {
-    scanned_data_size = scanQR(&scanned_data_raw);
-  } while (scanned_data_size <= 0);
-#else
-  init_camera(false);
-#endif
-  
-  // TODO load via QR code (take picture, scan, parse text)
-#ifdef SCAN_QR
-  const char* ssid = scanned_data->ap_ssid.c_str();
-  const char* password = scanned_data->ap_password.c_str();
-#else
-  const char* ssid = "VIVOFIBRA-7F90";
-  const char* password = "c662727f90";
-#endif
-  connect_to_ap(ssid, password);
-
-#ifdef DEBUG
-  Serial.println("debug pic");
-  String pic = take_picture();
-  Serial.println("debug pic=\"" + pic + "\"");
-#endif
+    delay(500);
+    apConnected = connect_to_ap(getSSID().c_str(), getPass().c_str());
+  } while (!apConnected);
 
 #ifdef REGISTER
-  int registerResult;
-  String registerToken;
-
   do {
-    // TODO load via QR code (take picture, scan, parse text)
-#ifdef SCAN_QR
-    registerToken = scanned_data->registerToken;
-#else
-    registerToken = "A1B2C3"
-#endif
-    registerResult = registerDevice(registerToken);
+    delay(500);
+    registerResult = registerDevice(getToken().c_str());
   } while (registerResult != 200);
 #endif
 
-#ifdef SCAN_QR
-  free(scanned_data);
-
-  // Restart camera in color mode
-  esp_camera_deinit();
-  init_camera(false);
-#endif
+  init_ultrasound();
   
   execute(onEvent);
 }
@@ -95,9 +64,13 @@ void loop() {
 }
 
 void onEvent(void) {
-  Serial.println("onEvent!");
   String pic = take_picture();
+  
+#ifdef DEBUG
+  Serial.println("onEvent!");
   Serial.println("pic=\"" + pic + "\"");
+#endif
+
   if (pic.length()) {
     sendEvent(pic);
   }

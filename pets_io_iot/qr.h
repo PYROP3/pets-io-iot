@@ -26,19 +26,24 @@
 #define MASK_ODD_STATE 0x1
 
 #define MAX_FINDERS 5
+#define FINDER_SIZE 7
+#define ALIGNMENT_S 18
 
 // TODO calculate automatically?
 #define QR_N 29
+
 #define QR_TIMING_START 6
 
 int finders[MAX_FINDERS][3]; // -> [x][y][size]
 int total_finders = 0;
 int anchor[2];
+int mask_pattern;
+int error_correction_level;
 
 float perspective_transform[3][3] = {0.};
 int transformed_coords[2];
 
-bool rawCode[QR_N][QR_N] = {false};
+bool rawCode[QR_N][QR_N] = {false}; // [j][i] == [x][y] == [line][col]
 
 typedef struct {
   String registerToken;
@@ -227,14 +232,118 @@ float * gaussReduce(float mat[3][4]) {
   return result;
 }
 
+boolean isMasked(int x, int y) {
+  // Finder patterns
+  if (((x < FINDER_SIZE + 1) && (y < FINDER_SIZE + 1)) ||
+      ((x > QR_N - FINDER_SIZE - 2) && (y < FINDER_SIZE + 1)) ||
+      ((x < FINDER_SIZE + 1) && (y > QR_N - FINDER_SIZE - 2))) {
+    return false;
+  }
+
+  // Timing patterns
+  if ((x == FINDER_SIZE - 1) || (y == FINDER_SIZE - 1)) {
+    return false;
+  }
+
+  // Format info
+  if (((x == FINDER_SIZE + 1) && ((y <= FINDER_SIZE + 1) || (y > QR_N - FINDER_SIZE - 2))) ||
+      ((y == FINDER_SIZE + 1) && ((x <= FINDER_SIZE + 1) || (x > QR_N - FINDER_SIZE - 2)))) {
+    return false;
+  }
+
+  // Alignment patterns
+  if ((((x - 5) % ALIGNMENT_S) == ALIGNMENT_S - 3 - 0) ||
+      (((x - 5) % ALIGNMENT_S) == ALIGNMENT_S - 3 - 1) ||
+      (((x - 5) % ALIGNMENT_S) == ALIGNMENT_S - 3 - 2) ||
+      (((x - 5) % ALIGNMENT_S) == ALIGNMENT_S - 3 - 3) ||
+      (((x - 5) % ALIGNMENT_S) == ALIGNMENT_S - 3 - 4)) {
+    if ((((y - 5) % ALIGNMENT_S) == ALIGNMENT_S - 3 - 0) ||
+        (((y - 5) % ALIGNMENT_S) == ALIGNMENT_S - 3 - 1) ||
+        (((y - 5) % ALIGNMENT_S) == ALIGNMENT_S - 3 - 2) ||
+        (((y - 5) % ALIGNMENT_S) == ALIGNMENT_S - 3 - 3) ||
+        (((y - 5) % ALIGNMENT_S) == ALIGNMENT_S - 3 - 4)) {
+      if (((x == (QR_N - FINDER_SIZE - 2)) && ((y == FINDER_SIZE) || (y == FINDER_SIZE + 1))) ||
+          (((x == FINDER_SIZE) || (x == FINDER_SIZE + 1)) && (y == (QR_N - FINDER_SIZE - 2)))) {
+        return true;
+      }
+      return false;
+    }
+  }
+
+  return true;
+}
+
+boolean getMask(int x, int y) {
+  if (!isMasked(x, y)) return false;
+
+  switch (mask_pattern) {
+    case 0:
+      return (((x * y) % 2) + ((x * y) % 3)) == 0;
+    case 1:
+      return (((y / 2)  + (x / 3)) % 2) == 0;
+    case 2:
+      return ((((x * y) % 3) + x + y) % 2) == 0;
+    case 3:
+      return ((((x * y) % 3) + (x * y)) % 2) == 0;
+    case 4:
+      return (y % 2) == 0;
+    case 5:
+      return ((x + y) % 2) == 0;
+    case 6:
+      return ((x + y) % 3) == 0;
+    case 7:
+      return (x % 3) == 0;
+    default:
+      return false;
+  }
+}
+
+void parseFormatInformation() {
+  int mask_pattern_1, mask_pattern_2;
+  int ecl_1, ecl_2;
+  
+  mask_pattern_1 = (rawCode[2][FINDER_SIZE + 1] << 2) | (rawCode[3][FINDER_SIZE + 1] << 1) | rawCode[4][FINDER_SIZE + 1];
+  mask_pattern_2 = (rawCode[FINDER_SIZE + 1][QR_N - 3] << 2) | (rawCode[FINDER_SIZE + 1][QR_N - 4] << 1) | rawCode[FINDER_SIZE + 1][QR_N - 5];
+
+#ifdef DEBUG
+  Serial.printf("scanQR: mask patterns %#x x %#x\n", mask_pattern_1, mask_pattern_2);
+#endif
+
+  if (mask_pattern_1 == mask_pattern_2) {
+    mask_pattern = mask_pattern_1;
+  } else {
+    // TODO should use format ecc
+    mask_pattern = 7;
+  }
+  
+  ecl_1 = (rawCode[0][FINDER_SIZE + 1] << 1) | rawCode[1][FINDER_SIZE + 1];
+  ecl_2 = (rawCode[FINDER_SIZE + 1][QR_N - 1] << 1) | rawCode[FINDER_SIZE + 1][QR_N - 2];
+
+#ifdef DEBUG
+  Serial.printf("scanQR: ec level %#x x %#x\n", ecl_1, ecl_2);
+#endif
+
+  if (ecl_1 == ecl_2) {
+    error_correction_level = ecl_1;
+  } // else ?
+}
+
+void applyMask() {
+  int i, j;
+  
+  for (i = 0; i < QR_N; i++) {
+    for (j = 0; j < QR_N; j++) {
+      rawCode[j][i] ^= getMask(j, i);
+    }
+  }
+}
+
 boolean checkRatio(int *ratio) {
   int total_size = 0;
   int ratio_ptr = 0;
   int count;
   int module_size;
   int max_var;
-  
-  // Serial.printf("scanQR: checkRatio: [%d,%d,%d,%d,%d]\n", ratio[0], ratio[1], ratio[2], ratio[3], ratio[4]);
   
   for (ratio_ptr = 0; ratio_ptr < 5; ratio_ptr++) {
     count = ratio[ratio_ptr];
@@ -906,12 +1015,23 @@ void calculatePerspective() {
 }
 
 void processQRCode(uint8_t *buf, int width) {
-  int i, j;
+  int i, j, k, l;
+  int hits;
 
   for (i = 0; i < QR_N; i++) {
     for (j = 0; j < QR_N; j++) {
+      hits = 0;
       applyTransform(i, j);
-      rawCode[j][i] = IS_BLACK(buf[_VX(transformed_coords) + _VY(transformed_coords) * width]);
+      for (k = -1; k < 2; k++) {
+        for (l = -1; l < 2; l++) {
+          if (IS_BLACK(buf[(_VX(transformed_coords)+k) + (_VY(transformed_coords)+l) * width]))
+            hits++;
+        }
+      }
+#ifdef DEBUG
+      Serial.printf("scanQR: processing @ %d,%d => %d\n", i, j, hits);
+#endif
+      rawCode[j][i] = hits > 4 ? 1 : 0;
     }
   }
 }
@@ -922,6 +1042,28 @@ void printQRCode() {
   for (i = 0; i < QR_N; i++) {
     for (j = 0; j < QR_N; j++) {
       Serial.print(rawCode[j][i] ? "█" : "░");
+    }
+    Serial.println("");
+  }
+}
+
+void printMaskArea() {
+  int i, j;
+  
+  for (i = 0; i < QR_N; i++) {
+    for (j = 0; j < QR_N; j++) {
+      Serial.print(isMasked(j, i) ? "█" : "░");
+    }
+    Serial.println("");
+  }
+}
+
+void printMask() {
+  int i, j;
+  
+  for (i = 0; i < QR_N; i++) {
+    for (j = 0; j < QR_N; j++) {
+      Serial.print(getMask(j, i) ? "█" : "░");
     }
     Serial.println("");
   }
@@ -1021,6 +1163,23 @@ int scanQR(uint8_t **target) {
   }
   Serial.println("scanQR: timing SUCCESS");
 
+  Serial.println("");
+  printQRCode();
+  
+//#ifdef DEBUG
+  Serial.println("");
+  printMaskArea();
+//#endif
+
+  parseFormatInformation();
+
+//#ifdef DEBUG
+  Serial.println("");
+  printMask();
+//#endif
+
+  applyMask();
+  Serial.println("");
   printQRCode();
 
   // TODO read data
