@@ -2,12 +2,11 @@
 
 #define WIFI_ACCESS_H
 
-//const char* ssid = "NET_2GDC3667";
-//const char* password = "63DC3667";
-//const char* ssid = "VIVOFIBRA-7F90";
-//const char* password = "c662727f90";
-
 #define RETRY_WIFI_COUNT 5
+
+#ifdef DEBUG_WIFI
+#define DEBUG
+#endif
 
 boolean connect_to_ap(const char *ssid, const char *password) {
   int retryCount = RETRY_WIFI_COUNT;
@@ -16,6 +15,13 @@ boolean connect_to_ap(const char *ssid, const char *password) {
 #ifdef DEBUG 
   Serial.printf("connect_to_ap(%s, %s)\n", ssid, password);
 #endif
+
+  if(!strlen(ssid) || !strlen(password)) {
+#ifdef DEBUG 
+  Serial.printf("ssid or password are empty\n");
+#endif
+    return false;
+  }
 
   WiFi.begin(ssid, password);
 
@@ -30,14 +36,21 @@ boolean connect_to_ap(const char *ssid, const char *password) {
   
 #ifdef DEBUG
   Serial.println("");
-  Serial.printf("WiFi connected: %d\n", (int)result);
+  Serial.printf("WiFi connected: %d (%d)\n", (int)result, (int)true);
 #endif
 
   if (!result) {
+#ifdef DEBUG 
+  Serial.printf("disconnecting...\n");
+#endif
     WiFi.disconnect();
   }
 
   return result;
 }
+
+#ifdef DEBUG
+#undef DEBUG
+#endif
 
 #endif

@@ -1,3 +1,4 @@
+#include "debug.h"
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -54,6 +55,7 @@ void setup() {
   } while (registerResult != 200);
 #endif
 
+  init_camera(false);
   init_ultrasound();
   
   execute(onEvent);
@@ -71,7 +73,5 @@ void onEvent(void) {
   Serial.println("pic=\"" + pic + "\"");
 #endif
 
-  if (pic.length()) {
-    sendEvent(pic);
-  }
+  sendEvent(pic);
 }

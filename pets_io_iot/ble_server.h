@@ -16,6 +16,10 @@
 
 #define PIO_DEVICE_ID "PIOFB00001"
 
+#ifdef DEBUG_BLE
+#define DEBUG
+#endif
+
 BLEServer *pServer;
 BLEService *pService;
 BLECharacteristic *pSSIDCharacteristic, *pPassCharacteristic, *pToknCharacteristic;
@@ -76,5 +80,9 @@ void destroy_ble() {
   pService->stop();
   BLEDevice::deinit(true);
 }
+
+#ifdef DEBUG
+#undef DEBUG
+#endif
 
 #endif

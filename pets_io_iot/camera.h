@@ -11,6 +11,10 @@
 // TODO move b64 stuff to utils
 #define BASE64_ENCODING "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
+#ifdef DEBUG_CAM
+#define DEBUG
+#endif
+
 String bytesToB64(uint8_t *bytes, int len) {
   String result = "";
   int i = 0;
@@ -58,7 +62,9 @@ String bytesToB64(uint8_t *bytes, int len) {
 #endif
   }
 
+#ifdef PRINT_B64
   Serial.println("");
+#endif
 
   return result;
 }
@@ -104,14 +110,19 @@ int init_camera(boolean grayscale) {
 
   // camera init
   esp_err_t err;
+  int count = 5;
 
   do {
     err = esp_camera_init(&config);
     if (err != ESP_OK) {
       Serial.printf("Camera init failed with error 0x%x", err);
-      return err;
+      delay(500);
     }
-  } while (err != ESP_OK);
+  } while (err != ESP_OK && count-- > 0);
+
+  if (err != ESP_OK) {
+    return err;
+  }
 
   sensor_t * s = esp_camera_sensor_get();
   // initial sensors are flipped vertically and colors are a bit saturated
@@ -142,9 +153,16 @@ String take_picture() {
 
   esp_camera_fb_return(fb);
   int64_t fr_end = esp_timer_get_time();
+
+#ifdef DEBUG
   Serial.printf("JPG: %uB %ums\n", (uint32_t)(fb->len), (uint32_t)((fr_end - fr_start)/1000));
+#endif
 
   return pic;
 }
+
+#ifdef DEBUG
+#undef DEBUG
+#endif
 
 #endif

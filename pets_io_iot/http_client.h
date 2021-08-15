@@ -2,14 +2,19 @@
 
 #define HTTP_CLIENT_H
 
-//Your Domain name with URL path or IP address with path
+//#define ENV_LOCAL
+
 #ifdef ENV_LOCAL
 #define EVENT_API "http://192.168.15.27:5000/eventTriggered"
 #else
-#define EVENT_API "https://pets-io.herokuapp.com/eventTriggered"
+#define EVENT_API "http://pets-io.herokuapp.com/eventTriggered"
 #endif
 
 #define PIO_DEVICE_ID "PIOFB00001"
+
+#ifdef DEBUG_HTTP
+#define DEBUG
+#endif
 
 String generateMessage(String picture_base64) {
   String objStart = "{";
@@ -34,6 +39,10 @@ int sendEvent(String picture_base64) {
   HTTPClient http;
   
   // Your Domain name with URL path or IP address with path
+#ifdef DEBUG
+  Serial.print("HTTP addr: ");
+  Serial.println(EVENT_API);
+#endif
   http.begin(EVENT_API);
 
   // Specify headers
@@ -68,5 +77,9 @@ int sendEvent(String picture_base64) {
   
   return httpResponseCode;
 }
+
+#ifdef DEBUG
+#undef DEBUG
+#endif
 
 #endif

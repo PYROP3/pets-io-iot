@@ -9,6 +9,10 @@
 
 #define ABS(x) x & 0x7fffffff
 
+#ifdef DEBUG_STATES
+#define DEBUG
+#endif
+
 void execute(void (*on_trigger)(void)) {
   int threshold_dist;
   boolean alive = true;
@@ -31,10 +35,6 @@ void execute(void (*on_trigger)(void)) {
     // TODO pre-scan picture to check if trigger is false alarm
     on_trigger();
 
-#ifdef DEBUG
-    Serial.printf("Trigger!\n");
-#endif
-
     delay(TRIGGER_SLEEP_MS);
     
     while (getAvgReading() < ULTRASOUND_THRESHOLD) {
@@ -45,5 +45,9 @@ void execute(void (*on_trigger)(void)) {
     }
   }
 }
+
+#ifdef DEBUG
+#undef DEBUG
+#endif
 
 #endif

@@ -620,7 +620,7 @@ bool handleFinder(uint8_t * buf, int * ratio, int x, int y, int max_x, int max_y
   bool validFinder;
   bool found;
   int finder_idx;
-  // int estimated_size = total_size / 7;
+  int estimated_size = total_size / 7;
   
 #ifdef DEBUG
   Serial.printf("scanQR: handleFinder ratio: [%d,%d,%d,%d,%d]\n", ratio[0], ratio[1], ratio[2], ratio[3], ratio[4]);
@@ -1187,5 +1187,9 @@ int scanQR(uint8_t **target) {
   *target = NULL;
   return 0;
 }
+
+#ifdef DEBUG
+#undef DEBUG
+#endif
 
 #endif

@@ -5,10 +5,14 @@
 #ifdef ENV_LOCAL
 #define REGISTER_API "http://192.168.15.27:5000/confirmDeviceRegistration?registerToken="
 #else
-#define REGISTER_API "https://pets-io.herokuapp.com/confirmDeviceRegistration?registerToken="
+#define REGISTER_API "http://pets-io.herokuapp.com/confirmDeviceRegistration?registerToken="
 #endif
 
 #define PIO_DEVICE_ID "PIOFB00001"
+
+#ifdef DEBUG_REGISTER
+#define DEBUG
+#endif
 
 String generateRegistrationMessage(String registerToken) {
   String objStart = "{";
@@ -50,6 +54,7 @@ int registerDevice(String registerToken) {
     Serial.println(httpResponseCode);
     String payload = http.getString();
     Serial.println(payload);
+    // TODO write to file if already registered, on next boot if file exists skip register step
   }
   else {
     Serial.print("Error code: ");
@@ -61,5 +66,9 @@ int registerDevice(String registerToken) {
   
   return httpResponseCode;
 }
+
+#ifdef DEBUG
+#undef DEBUG
+#endif
 
 #endif
