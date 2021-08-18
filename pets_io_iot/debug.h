@@ -9,4 +9,6 @@
 //#define DEBUG_STATES
 #define DEBUG_WIFI
 
+//#define ENV_LOCAL
+
 #endif

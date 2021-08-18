@@ -22,7 +22,6 @@ void setup() {
   boolean apConnected = false;
 #ifdef REGISTER
   int registerResult;
-  String registerToken;
 #endif
   
   Serial.begin(115200);
@@ -42,6 +41,8 @@ void setup() {
 #endif
 
   init_ble();
+  init_camera(false);
+  init_ultrasound();
 
   do {
     delay(500);
@@ -54,9 +55,6 @@ void setup() {
     registerResult = registerDevice(getToken().c_str());
   } while (registerResult != 200);
 #endif
-
-  init_camera(false);
-  init_ultrasound();
   
   execute(onEvent);
 }
