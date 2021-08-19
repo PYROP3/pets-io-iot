@@ -44,16 +44,22 @@ void setup() {
   init_camera(false);
   init_ultrasound();
 
+  setConnectionStatus("waiting");
   do {
     delay(500);
     apConnected = connect_to_ap(getSSID().c_str(), getPass().c_str());
   } while (!apConnected);
+  setConnectionStatus("success");
 
 #ifdef REGISTER
+  setRegisterStatus("registering");
   do {
     delay(500);
     registerResult = registerDevice(getToken().c_str());
   } while (registerResult != 200);
+  setRegisterStatus("success");
+#else
+  setRegisterStatus("skipped");
 #endif
   
   execute(onEvent);

@@ -24,9 +24,10 @@ boolean connect_to_ap(const char *ssid, const char *password) {
   }
 
   WiFi.begin(ssid, password);
+  setConnectionStatus("connecting");
 
   while (WiFi.status() != WL_CONNECTED && retryCount-- > 0) {
-    delay(500);
+    delay(3000);
 #ifdef DEBUG
     Serial.print(".");
 #endif
@@ -43,6 +44,7 @@ boolean connect_to_ap(const char *ssid, const char *password) {
 #ifdef DEBUG 
   Serial.printf("disconnecting...\n");
 #endif
+    setConnectionStatus("error");
     WiFi.disconnect();
   }
 

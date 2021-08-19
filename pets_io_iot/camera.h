@@ -121,6 +121,7 @@ int init_camera(boolean grayscale) {
   } while (err != ESP_OK && count-- > 0);
 
   if (err != ESP_OK) {
+    setCameraStatus("error");
     return err;
   }
 
@@ -135,6 +136,7 @@ int init_camera(boolean grayscale) {
   s->set_framesize(s, FRAMESIZE_QVGA);
 
   Serial.println("Camera init success");
+  setCameraStatus("success");
 
   return 0;
 }
