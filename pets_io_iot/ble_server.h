@@ -28,6 +28,18 @@ BLEService *pService;
 BLECharacteristic *pSSIDCharacteristic, *pPassCharacteristic, *pToknCharacteristic;
 BLECharacteristic *pStatusConnectionCharacteristic, *pStatusCameraCharacteristic, *pStatusRegisterCharacteristic;
 
+void setConnectionStatus(String connectionStatus) {
+  pStatusConnectionCharacteristic->setValue(connectionStatus.c_str());
+}
+
+void setCameraStatus(String cameraStatus) {
+  pStatusCameraCharacteristic->setValue(cameraStatus.c_str());
+}
+
+void setRegisterStatus(String registerStatus) {
+  pStatusRegisterCharacteristic->setValue(registerStatus.c_str());
+}
+
 void init_ble() {
 #ifdef DEBUG
   Serial.println("Starting BLE work!");
@@ -97,23 +109,6 @@ String getPass() {
 
 String getToken() {
   return pToknCharacteristic->getValue().c_str(); // "A1B2C3"
-}
-
-void setConnectionStatus(String connectionStatus) {
-  pStatusConnectionCharacteristic->setValue(connectionStatus.c_str());
-}
-
-void setCameraStatus(String cameraStatus) {
-  pStatusCameraCharacteristic->setValue(cameraStatus.c_str());
-}
-
-void setRegisterStatus(String registerStatus) {
-  pStatusRegisterCharacteristic->setValue(registerStatus.c_str());
-}
-
-void destroy_ble() {
-  pService->stop();
-  BLEDevice::deinit(true);
 }
 
 #ifdef DEBUG
