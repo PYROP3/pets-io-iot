@@ -126,14 +126,9 @@ int init_camera(boolean grayscale) {
   }
 
   sensor_t * s = esp_camera_sensor_get();
-  // initial sensors are flipped vertically and colors are a bit saturated
-  if (s->id.PID == OV3660_PID) {
-    s->set_vflip(s, 1); // flip it back
-    s->set_brightness(s, 1); // up the brightness just a bit
-    s->set_saturation(s, -2); // lower the saturation
-  }
+  s->set_vflip(s, 1); // flip it back
   // drop down frame size for higher initial frame rate
-  s->set_framesize(s, FRAMESIZE_QVGA);
+  //s->set_framesize(s, FRAMESIZE_QVGA);
 
   Serial.println("Camera init success");
   setCameraStatus("success");
@@ -143,7 +138,9 @@ int init_camera(boolean grayscale) {
 
 String take_picture() {
   camera_fb_t * fb = NULL;
+#ifdef DEBUG
   int64_t fr_start = esp_timer_get_time();
+#endif
 
   fb = esp_camera_fb_get();
   if (!fb) {
@@ -154,7 +151,9 @@ String take_picture() {
   String pic = bytesToB64(fb->buf, fb->len);
 
   esp_camera_fb_return(fb);
+#ifdef DEBUG
   int64_t fr_end = esp_timer_get_time();
+#endif
 
 #ifdef DEBUG
   Serial.printf("JPG: %uB %ums\n", (uint32_t)(fb->len), (uint32_t)((fr_end - fr_start)/1000));

@@ -13,37 +13,62 @@
 #define DEBUG
 #endif
 
+enum machine_state {
+  state_sleeping_low = 0,
+  state_trigger,
+  state_sleeping_high
+};
+
+static unsigned long last_loop_millis = millis();
+static machine_state prev_state = state_sleeping_low;
+
 void execute(void (*on_trigger)(void)) {
-  int threshold_dist;
-  boolean alive = true;
-
-  // Wait for 10 seconds
-  delay(10000);
-
-  while (alive) {
-    while (getAvgReading() > ULTRASOUND_THRESHOLD) {
+  machine_state next_state = prev_state;
+  unsigned long now_millis = millis();
 #ifdef DEBUG
-      Serial.printf("[OUT/LOW] Sleeping...\n");
+  Serial.printf("Loop : %d @ %lu (%lu)\n", prev_state, now_millis, last_loop_millis);
 #endif
-      delay(POOLING_SLEEP_MS);
-    }
-    
+  
+  switch (prev_state) {
+    case state_sleeping_low:
+      if (now_millis - last_loop_millis >= POOLING_SLEEP_MS) {
+        if (getAvgReading() > ULTRASOUND_THRESHOLD) {
 #ifdef DEBUG
-    Serial.printf("Detected trigger\n");
+          Serial.printf("[OUT/LOW] Sleeping...\n");
 #endif
-
-    // TODO pre-scan picture to check if trigger is false alarm
-    on_trigger();
-
-    delay(TRIGGER_SLEEP_MS);
-    
-    while (getAvgReading() < ULTRASOUND_THRESHOLD) {
+        } else {
 #ifdef DEBUG
-      Serial.printf("[OUT/HIGH] Sleeping...\n");
+          Serial.printf("[OUT/LOW] Change state\n");
 #endif
-      delay(POOLING_SLEEP_MS);
-    }
+          next_state = state_trigger;
+          last_loop_millis = now_millis;
+        }
+      }
+      break;
+    case state_trigger:
+#ifdef DEBUG
+      Serial.printf("Detected trigger\n");
+#endif
+      on_trigger();
+      next_state = state_sleeping_high;
+    break;
+    case state_sleeping_high:
+      if (now_millis - last_loop_millis >= POOLING_SLEEP_MS) {
+        if (getAvgReading() < ULTRASOUND_THRESHOLD) {
+#ifdef DEBUG
+          Serial.printf("[OUT/HIGH] Sleeping...\n");
+#endif
+        } else {
+#ifdef DEBUG
+          Serial.printf("[OUT/HIGH] Change state\n");
+#endif
+          next_state = state_sleeping_low;
+          last_loop_millis = now_millis;
+        }
+      }
+      break;
   }
+  prev_state = next_state;
 }
 
 #ifdef DEBUG

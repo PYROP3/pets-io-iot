@@ -13,6 +13,7 @@
 #define SSID_CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 #define PASS_CHARACTERISTIC_UUID "995a473b-498e-43d0-9be3-7f3c37ba005f"
 #define TOKN_CHARACTERISTIC_UUID "70461f4d-4142-4135-9582-8d9a9fc50ea4"
+#define STRM_CHARACTERISTIC_UUID "1a014454-e990-438b-91f5-fa11173ca7b0"
 #define STATUS_CON_CHARACTERISTIC_UUID "55246fe7-1105-4395-a472-f26201b3d75c"
 #define STATUS_CAM_CHARACTERISTIC_UUID "dd1e4f59-d6c5-4d65-a2c5-ed2b6d2570dd"
 #define STATUS_REG_CHARACTERISTIC_UUID "2f6255b5-c4fa-403c-9b18-11f40ffee21b"
@@ -25,7 +26,7 @@
 
 BLEServer *pServer;
 BLEService *pService;
-BLECharacteristic *pSSIDCharacteristic, *pPassCharacteristic, *pToknCharacteristic;
+BLECharacteristic *pSSIDCharacteristic, *pPassCharacteristic, *pToknCharacteristic, *pStrmCharacteristic;
 BLECharacteristic *pStatusConnectionCharacteristic, *pStatusCameraCharacteristic, *pStatusRegisterCharacteristic;
 
 void setConnectionStatus(String connectionStatus) {
@@ -40,12 +41,16 @@ void setRegisterStatus(String registerStatus) {
   pStatusRegisterCharacteristic->setValue(registerStatus.c_str());
 }
 
+void setStreamServer(String streamServer) {
+  pStrmCharacteristic->setValue(streamServer.c_str());
+}
+
 void init_ble() {
 #ifdef DEBUG
   Serial.println("Starting BLE work!");
 #endif
 
-  BLEDevice::init("Pets.io_"PIO_DEVICE_ID);
+  BLEDevice::init("Pets.io_" PIO_DEVICE_ID);
   pServer = BLEDevice::createServer();
   pService = pServer->createService(SERVICE_UUID);
   pSSIDCharacteristic = pService->createCharacteristic(
@@ -60,6 +65,11 @@ void init_ble() {
                                        );
   pToknCharacteristic = pService->createCharacteristic(
                                          TOKN_CHARACTERISTIC_UUID,
+                                         BLECharacteristic::PROPERTY_READ |
+                                         BLECharacteristic::PROPERTY_WRITE
+                                       );
+  pStrmCharacteristic = pService->createCharacteristic(
+                                         STRM_CHARACTERISTIC_UUID,
                                          BLECharacteristic::PROPERTY_READ |
                                          BLECharacteristic::PROPERTY_WRITE
                                        );

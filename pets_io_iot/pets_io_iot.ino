@@ -10,6 +10,7 @@
 #include "wifi_access.h"
 #include "registrar.h"
 #include "qr.h"
+#include "streaming.h"
 
 //#define SCAN_QR
 //#define REGISTER
@@ -27,18 +28,6 @@ void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
-
-#ifdef DEBUG
-  Serial.print("Testing B64: ");
-  Serial.print(bytesToB64((uint8_t*)"Man", 3));
-  Serial.println(" (should be \"TWFu\")");
-  Serial.print("Testing B64: ");
-  Serial.print(bytesToB64((uint8_t*)"Ma", 2));
-  Serial.println(" (should be \"TWE=\")");
-  Serial.print("Testing B64: ");
-  Serial.print(bytesToB64((uint8_t*)"M", 1));
-  Serial.println(" (should be \"TQ==\")");
-#endif
 
   init_ble();
   init_camera(false);
@@ -61,21 +50,23 @@ void setup() {
 #else
   setRegisterStatus("skipped");
 #endif
-  
-  execute(onEvent);
+
+  setup_streaming();
 }
 
 void loop() {
   // Loops automatically on setup
+  delay(1);
+  execute(onEvent);
 }
 
 void onEvent(void) {
   String pic = take_picture();
   
-#ifdef DEBUG
   Serial.println("onEvent!");
+#ifdef DEBUG
   Serial.println("pic=\"" + pic + "\"");
 #endif
 
-  sendEvent(pic);
+  //sendEvent(pic);
 }
