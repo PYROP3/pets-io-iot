@@ -61,12 +61,6 @@ void loop() {
 }
 
 void onEvent(void) {
-  String pic = take_picture();
-  
   Serial.println("onEvent!");
-#ifdef DEBUG
-  Serial.println("pic=\"" + pic + "\"");
-#endif
-
-  //sendEvent(pic);
+  sendEvent();
 }

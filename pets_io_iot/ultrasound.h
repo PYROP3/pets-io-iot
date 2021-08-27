@@ -4,7 +4,7 @@
 
 #define TRIG_PIN 12
 #define ECHO_PIN 13
-#define ULTRASOUND_THRESHOLD 20
+#define ULTRASOUND_THRESHOLD 15
 
 void init_ultrasound() {
   pinMode(TRIG_PIN, OUTPUT);

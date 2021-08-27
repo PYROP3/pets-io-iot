@@ -3,71 +3,13 @@
 #define CAMERA_H
 #define CAMERA_MODEL_AI_THINKER
 
-//#define PRINT_B64
 #define CAM_HD
 
 #include "camera_pins.h"
 
-// TODO move b64 stuff to utils
-#define BASE64_ENCODING "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-
 #ifdef DEBUG_CAM
 #define DEBUG
 #endif
-
-String bytesToB64(uint8_t *bytes, int len) {
-  String result = "";
-  int i = 0;
-
-#ifdef PRINT_B64
-  Serial.printf("bytesToB64 in %d\n", len);
-#endif
-  
-  for (i = 0; i < len / 3; i++) {
-    result += BASE64_ENCODING[(bytes[3*i] & 0xFC) >> 2];
-    result += BASE64_ENCODING[((bytes[3*i] & 0x03) << 4) | ((bytes[3*i+1] & 0xF0) >> 4)];
-    result += BASE64_ENCODING[((bytes[3*i+1] & 0x0F) << 2) | ((bytes[3*i+2] & 0xC0) >> 6)];
-    result += BASE64_ENCODING[bytes[3*i+2] & 0x3F];
-#ifdef PRINT_B64
-  Serial.printf("%c%c%c%c", 
-      BASE64_ENCODING[(bytes[3*i] & 0xFC) >> 2],
-      BASE64_ENCODING[((bytes[3*i] & 0x03) << 4) | ((bytes[3*i+1] & 0xF0) >> 4)],
-      BASE64_ENCODING[((bytes[3*i+1] & 0x0F) << 2) | ((bytes[3*i+2] & 0xC0) >> 6)],
-      BASE64_ENCODING[bytes[3*i+2] & 0x3F]);
-#endif
-  }
-
-  if (len % 3 == 2) {
-    result += BASE64_ENCODING[(bytes[3*i] & 0xFC) >> 2];
-    result += BASE64_ENCODING[((bytes[3*i] & 0x03) << 4) | ((bytes[3*i+1] & 0xF0) >> 4)];
-    result += BASE64_ENCODING[(bytes[3*i+1] & 0x0F) << 2];
-    result += "=";
-#ifdef PRINT_B64
-    Serial.printf("%c%c%c%c", 
-      BASE64_ENCODING[(bytes[3*i] & 0xFC) >> 2],
-      BASE64_ENCODING[((bytes[3*i] & 0x03) << 4) | ((bytes[3*i+1] & 0xF0) >> 4)],
-      BASE64_ENCODING[((bytes[3*i+1] & 0x0F) << 2)],
-      '=');
-#endif
-  } else if (len % 3 == 1) {
-    result += BASE64_ENCODING[(bytes[3*i] & 0xFC) >> 2];
-    result += BASE64_ENCODING[(bytes[3*i] & 0x03) << 4];
-    result += "==";
-#ifdef PRINT_B64
-    Serial.printf("%c%c%c%c", 
-      BASE64_ENCODING[(bytes[3*i] & 0xFC) >> 2],
-      BASE64_ENCODING[((bytes[3*i] & 0x03) << 4)],
-      '=',
-      '=');
-#endif
-  }
-
-#ifdef PRINT_B64
-  Serial.println("");
-#endif
-
-  return result;
-}
 
 int init_camera(boolean grayscale) {
   camera_config_t config;
@@ -94,9 +36,6 @@ int init_camera(boolean grayscale) {
   
   // if PSRAM IC present, init with UXGA resolution and higher JPEG quality
   //                      for larger pre-allocated frame buffer.
-//  config.frame_size = FRAMESIZE_UXGA;
-//  config.jpeg_quality = 10;
-//  config.fb_count = 2;
 
 #ifdef CAM_HD
     config.frame_size = FRAMESIZE_UXGA;
@@ -134,32 +73,6 @@ int init_camera(boolean grayscale) {
   setCameraStatus("success");
 
   return 0;
-}
-
-String take_picture() {
-  camera_fb_t * fb = NULL;
-#ifdef DEBUG
-  int64_t fr_start = esp_timer_get_time();
-#endif
-
-  fb = esp_camera_fb_get();
-  if (!fb) {
-      Serial.println("Camera capture failed");
-      return "";
-  }
-
-  String pic = bytesToB64(fb->buf, fb->len);
-
-  esp_camera_fb_return(fb);
-#ifdef DEBUG
-  int64_t fr_end = esp_timer_get_time();
-#endif
-
-#ifdef DEBUG
-  Serial.printf("JPG: %uB %ums\n", (uint32_t)(fb->len), (uint32_t)((fr_end - fr_start)/1000));
-#endif
-
-  return pic;
 }
 
 #ifdef DEBUG

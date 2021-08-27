@@ -24,6 +24,8 @@
 #define DEBUG
 #endif
 
+//#define DEFAULT_SETTINGS
+
 BLEServer *pServer;
 BLEService *pService;
 BLECharacteristic *pSSIDCharacteristic, *pPassCharacteristic, *pToknCharacteristic, *pStrmCharacteristic;
@@ -109,12 +111,20 @@ void init_ble() {
 
 String getSSID() {
   // TODO apply cryptography to protect sensitive data
+#ifdef DEFAULT_SETTINGS
+  return "NET_2GDC3667";
+#else
   return pSSIDCharacteristic->getValue().c_str();
+#endif
 }
 
 String getPass() {
   // TODO apply cryptography to protect sensitive data
+#ifdef DEFAULT_SETTINGS
+  return "63DC3667";
+#else
   return pPassCharacteristic->getValue().c_str();
+#endif
 }
 
 String getToken() {

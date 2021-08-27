@@ -2,6 +2,8 @@
 
 #define HTTP_CLIENT_H
 
+#include <string.h>
+
 //#define ENV_LOCAL
 
 #ifdef ENV_LOCAL
@@ -16,27 +18,11 @@
 #define DEBUG
 #endif
 
-String generateMessage(String picture_base64) {
-  String objStart = "{";
-  String objEnd = "}";
-  String colon = ":";
-  String quotes = "\"";
-  String comma = ",";
-  String imgTag = "Img";
-  String devTag = "DeviceID";
-  String devStr = PIO_DEVICE_ID;
-  String extTag = "Extra";
-  String nulStr = "null";
-  String message = objStart + 
-    quotes + imgTag + quotes + colon + quotes + picture_base64 + quotes + comma +
-    quotes + devTag + quotes + colon + quotes + devStr + quotes + comma +
-    quotes + extTag + quotes + colon + quotes + nulStr + quotes +
-    objEnd;
-  return message;
-}
-
-int sendEvent(String picture_base64) {
+int sendEvent() {
+  camera_fb_t * fb = NULL;
   HTTPClient http;
+
+  fb = esp_camera_fb_get();
   
   // Your Domain name with URL path or IP address with path
 #ifdef DEBUG
@@ -49,17 +35,17 @@ int sendEvent(String picture_base64) {
   http.addHeader("Content-Type", "application/json");
   http.addHeader("Content-Disposition", "inline; filename=capture.jpg");
   http.addHeader("Access-Control-Allow-Origin", "*");
+  http.addHeader("Device-ID", PIO_DEVICE_ID);
   
   // Send HTTP POST request
   // TODO try to remove background from photo
   // TODO add event extra (time in litterbox[s]/food consumed[g])
-  String httpMessage = generateMessage(picture_base64);
-#ifdef DEBUG
-  Serial.print("HTTP message: ");
-  Serial.println(httpMessage);
-#endif
-  int httpResponseCode = http.POST(httpMessage);
   
+#ifdef DEBUG
+  Serial.printf("Sending %d bytes\n", fb->len);
+#endif
+  int httpResponseCode = http.POST(fb->buf, fb->len);
+
 #ifdef DEBUG
   if (httpResponseCode>0) {
     Serial.print("HTTP Response code: ");
@@ -74,6 +60,7 @@ int sendEvent(String picture_base64) {
 #endif
   // Free resources
   http.end();
+  esp_camera_fb_return(fb);
   
   return httpResponseCode;
 }
